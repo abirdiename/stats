@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Snake /stats</title>
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1230;
+      --card: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.14);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.62);
+      --shadow: 0 20px 80px rgba(0,0,0,.45);
+      --radius: 18px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1000px 700px at 15% 15%, rgba(130,170,255,.18), transparent 60%),
+        radial-gradient(900px 650px at 85% 20%, rgba(255,160,220,.14), transparent 55%),
+        radial-gradient(800px 600px at 55% 85%, rgba(120,255,200,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+
+    .wrap{
+      width:min(900px, 100%);
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:16px;
+    }
+
+    @media (max-width: 900px){
+      .wrap{grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+
+    .game{
+      position:relative;
+      padding:14px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 14px 0 14px;
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .brand .title{
+      font-weight:800;
+      letter-spacing:.2px;
+      font-size:20px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .badge{
+      font-size:16px;
+      color: rgba(10,10,20,.95);
+      background: linear-gradient(90deg, rgba(160,255,220,.95), rgba(160,210,255,.95));
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.22);
+    }
+    .brand .sub{
+      font-size:18px;
+      color:var(--muted);
+    }
+
+    .hud{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .pill{
+      padding:12px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.20);
+      font-size:16px;
+      color: rgba(255,255,255,.82);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-width: 140px;
+      justify-content:space-between;
+    }
+    .pill b{
+      font-weight:800;
+      color: rgba(255,255,255,.92);
+    }
+
+    .canvasWrap{
+      padding:8px 8px 8px 8px;
+    }
+
+    canvas{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(900px 600px at 30% 10%, rgba(110,150,255,.12), transparent 60%),
+        radial-gradient(700px 500px at 90% 80%, rgba(255,130,220,.10), transparent 58%),
+        linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.42));
+      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      pointer-events:none;
+    }
+    .modal{
+      pointer-events:auto;
+      width:min(520px, 92%);
+      background: rgba(20,24,40,.72);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      padding:16px;
+      transform: translateY(0);
+    }
+    .modal h1{
+      margin:0 0 6px 0;
+      font-size:20px;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    .modal p{
+      margin:0 0 14px 0;
+      color: rgba(255,255,255,.72);
+      line-height:1.5;
+      font-size:18px;
+    }
+    .modal .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    button{
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius: 14px;
+      padding:14px 16px;
+      font-size:16px;
+      color: rgba(255,255,255,.92);
+      background: rgba(0,0,0,.24);
+      transition: transform .08s ease, filter .08s ease, background .12s ease;
+    }
+    button:hover{ filter: brightness(1.05); }
+    button:active{ transform: translateY(1px); }
+    .primary{
+      background: linear-gradient(90deg, rgba(160,255,220,.95), rgba(160,210,255,.95));
+      color: rgba(10,10,20,.95);
+      border:1px solid rgba(255,255,255,.25);
+    }
+    .ghost{
+      background: rgba(255,255,255,.08);
+    }
+
+    .side{
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .card{
+      padding:14px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+    }
+    .card h2{
+      margin:0 0 8px 0;
+      font-size:13px;
+      color: rgba(255,255,255,.86);
+      letter-spacing:.2px;
+    }
+    .card .k{
+      color: rgba(255,255,255,.62);
+      font-size:12px;
+      line-height:1.4;
+    }
+    .kbd{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width: 26px;
+      padding:3px 7px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.88);
+      font-weight:800;
+      font-size:12px;
+      margin: 0 4px 4px 0;
+    }
+
+    .tiny{
+      font-size:11px;
+      color: rgba(255,255,255,.55);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel game">
+      <div class="topbar">
+        <div class="brand">
+          <div class="title">Snake <span class="badge">Съешь больше /stats</span></div>
+          <div class="sub">Не врезайся в стену и в себя. Чем больше /stats — тем длиннее змейка.</div>
+        </div>
+        <div class="hud">
+          <div class="pill"><span>Счёт</span><b id="score">0</b></div>
+          <div class="pill"><span>Рекорд</span><b id="best">0</b></div>
+          <div class="pill"><span>Скорость</span><b id="speed">1.0×</b></div>
+        </div>
+      </div>
+
+      <div class="canvasWrap">
+        <canvas id="c" width="900" height="600" aria-label="Snake game canvas"></canvas>
+      </div>
+
+      <div class="overlay" id="overlay">
+        <div class="modal" id="modal">
+          <h1 id="modalTitle">Snake /stats</h1>
+          <p id="modalText">
+            Управление: стрелки или WASD. Пауза: Space / P.<br/>
+            Еда — это значок <b>/stats</b>. Съела — стала длиннее.
+          </p>
+          <div class="row">
+            <div class="tiny" id="modalHint">Совет: не жми “назад” (разворот на 180° не разрешён).</div>
+            <div class="btns">
+              <button class="ghost" id="btnPause">Пауза</button>
+              <button class="primary" id="btnStart">Играть</button>
+              <button id="btnRestart">Рестарт</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<script>
+(() => {
+  // ====== CONFIG ======
+  const GRID = 26;               // размер клетки в пикселях (логически)
+  const BASE_STEP_MS = 130;      // базовый шаг змейки (меньше = быстрее)
+  const MIN_STEP_MS  = 58;       // предел скорости
+  const SPEEDUP_EVERY = 4;       // каждые N съеденных /stats — ускоряемся чуть-чуть
+  const GROW_BY = 1;             // сколько сегментов добавлять за еду
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const $score = document.getElementById('score');
+  const $best  = document.getElementById('best');
+  const $speed = document.getElementById('speed');
+
+  const overlay = document.getElementById('overlay');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalText  = document.getElementById('modalText');
+  const modalHint  = document.getElementById('modalHint');
+
+  const btnStart = document.getElementById('btnStart');
+  const btnRestart = document.getElementById('btnRestart');
+  const btnPause = document.getElementById('btnPause');
+
+  // DPI-friendly canvas (чтобы было резче на ретина-экранах)
+  function fitCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const w = Math.floor(rect.width * dpr);
+    const h = Math.floor((rect.width * 0.65) * dpr); // красивое соотношение ~ 3:2
+    canvas.width = w;
+    canvas.height = h;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.scale(dpr, dpr);
+
+    // реальный “CSS-пиксельный” размер
+    state.viewW = rect.width;
+    state.viewH = rect.width * 0.66;
+
+    // привязка к GRID
+    state.cols = Math.floor(state.viewW / GRID);
+    state.rows = Math.floor(state.viewH / GRID);
+
+    // чтобы клетки были ровно в сетку
+    state.playW = state.cols * GRID;
+    state.playH = state.rows * GRID;
+  }
+
+  const state = {
+    running: false,
+    paused: false,
+    gameOver: false,
+
+    cols: 0, rows: 0,
+    viewW: 0, viewH: 0,
+    playW: 0, playH: 0,
+
+    dir: {x: 1, y: 0},
+    nextDir: {x: 1, y: 0},
+    snake: [],
+    grow: 0,
+
+    food: {x: 10, y: 10},
+    score: 0,
+    best: 0,
+
+    stepMs: BASE_STEP_MS,
+    accMs: 0,
+    lastTs: 0,
+  };
+
+  function loadBest() {
+    try {
+      const v = Number(localStorage.getItem('snake_stats_best') || 0);
+      state.best = Number.isFinite(v) ? v : 0;
+      $best.textContent = String(state.best);
+    } catch {}
+  }
+  function saveBest() {
+    try { localStorage.setItem('snake_stats_best', String(state.best)); } catch {}
+  }
+
+  function resetGame() {
+    state.running = false;
+    state.paused = false;
+    state.gameOver = false;
+
+    state.dir = {x: 1, y: 0};
+    state.nextDir = {x: 1, y: 0};
+
+    // стартовая змейка
+    const sx = Math.floor(state.cols * 0.33);
+    const sy = Math.floor(state.rows * 0.5);
+    state.snake = [
+      {x: sx, y: sy},
+      {x: sx - 1, y: sy},
+      {x: sx - 2, y: sy},
+      {x: sx - 3, y: sy},
+    ];
+    state.grow = 0;
+
+    state.score = 0;
+    state.stepMs = BASE_STEP_MS;
+    state.accMs = 0;
+    state.lastTs = 0;
+
+    placeFood();
+    updateHUD();
+    draw(); // чтобы сразу красиво отрисовалось
+  }
+
+  function updateHUD() {
+    $score.textContent = String(state.score);
+    $best.textContent = String(state.best);
+
+    const speedMul = BASE_STEP_MS / state.stepMs;
+    $speed.textContent = `${speedMul.toFixed(1)}×`;
+  }
+
+  function sameCell(a, b) { return a.x === b.x && a.y === b.y; }
+
+  function inSnake(x, y) {
+    return state.snake.some(s => s.x === x && s.y === y);
+  }
+
+  function placeFood() {
+    // случайная свободная клетка
+    let tries = 0;
+    while (tries++ < 5000) {
+      const x = Math.floor(Math.random() * state.cols);
+      const y = Math.floor(Math.random() * state.rows);
+      if (!inSnake(x, y)) {
+        state.food.x = x; state.food.y = y;
+        return;
+      }
+    }
+  }
+
+  function setModal(kind) {
+    overlay.style.display = 'flex';
+    if (kind === 'start') {
+      modalTitle.textContent = 'Snake /stats';
+      modalText.innerHTML = `Управление: стрелки или WASD. Пауза: <b>Space</b> / <b>P</b>.<br/>Собирай <b>/stats</b>, становись длиннее и не врезайся.`;
+      modalHint.textContent = 'Готова? Нажми “Играть”.';
+      btnStart.textContent = 'Играть';
+      btnPause.textContent = 'Пауза';
+    } else if (kind === 'paused') {
+      modalTitle.textContent = 'Пауза';
+      modalText.innerHTML = `Нажми <b>Space</b> или <b>P</b>, чтобы продолжить.`;
+      modalHint.textContent = 'Можно также нажать “Играть”.';
+      btnStart.textContent = 'Продолжить';
+      btnPause.textContent = 'Продолжить';
+    } else if (kind === 'over') {
+      modalTitle.textContent = 'Игра окончена';
+      modalText.innerHTML = `Счёт: <b>${state.score}</b>. Рекорд: <b>${state.best}</b>.<br/>Хочешь ещё?`;
+      modalHint.textContent = 'Совет: на высокой скорости заранее “планируй” повороты.';
+      btnStart.textContent = 'Снова';
+      btnPause.textContent = 'Пауза';
+    } else {
+      overlay.style.display = 'none';
+    }
+  }
+
+  function hideModal() { overlay.style.display = 'none'; }
+
+  function start() {
+    if (state.gameOver) resetGame();
+    state.running = true;
+    state.paused = false;
+    hideModal();
+  }
+
+  function restart() {
+    resetGame();
+    state.running = true;
+    state.paused = false;
+    hideModal();
+  }
+
+  function togglePause() {
+    if (!state.running && !state.gameOver) return;
+    if (state.gameOver) return;
+    state.paused = !state.paused;
+    if (state.paused) setModal('paused');
+    else hideModal();
+  }
+
+  // ====== INPUT ======
+  function trySetDir(x, y) {
+    // нельзя разворачиваться на 180°
+    if (x === -state.dir.x && y === -state.dir.y) return;
+    state.nextDir = {x, y};
+  }
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key;
+
+    if (k === 'ArrowUp' || k === 'w' || k === 'W') { e.preventDefault(); trySetDir(0,-1); }
+    else if (k === 'ArrowDown' || k === 's' || k === 'S') { e.preventDefault(); trySetDir(0, 1); }
+    else if (k === 'ArrowLeft' || k === 'a' || k === 'A') { e.preventDefault(); trySetDir(-1,0); }
+    else if (k === 'ArrowRight' || k === 'd' || k === 'D') { e.preventDefault(); trySetDir(1, 0); }
+    else if (k === ' ' || k === 'p' || k === 'P') { e.preventDefault(); togglePause(); }
+    else if (k === 'r' || k === 'R') { e.preventDefault(); restart(); }
+  }, { passive:false });
+  // KeyboardEvent — стандартный интерфейс событий клавиатуры :contentReference[oaicite:3]{index=3}
+
+  btnStart.addEventListener('click', () => start());
+  btnRestart.addEventListener('click', () => restart());
+  btnPause.addEventListener('click', () => {
+    if (state.paused) togglePause();
+    else togglePause();
+  });
+
+  // ====== GAME STEP ======
+  function step() {
+    state.dir = state.nextDir;
+
+    const head = state.snake[0];
+    const next = { x: head.x + state.dir.x, y: head.y + state.dir.y };
+
+    // столкновение со стеной
+    if (next.x < 0 || next.y < 0 || next.x >= state.cols || next.y >= state.rows) {
+      return gameOver();
+    }
+
+    // столкновение с собой: учитываем, что хвост может “уйти” если не растём
+    const tail = state.snake[state.snake.length - 1];
+    const willRemoveTail = (state.grow <= 0);
+    const hitsBody = state.snake.some((s, idx) => {
+      if (willRemoveTail && sameCell(s, tail)) return false;
+      return (s.x === next.x && s.y === next.y);
+    });
+    if (hitsBody) return gameOver();
+
+    // двигаем
+    state.snake.unshift(next);
+
+    // еда
+    if (next.x === state.food.x && next.y === state.food.y) {
+      state.score += 1;
+      state.grow += GROW_BY;
+
+      // ускорение
+      if (state.score % SPEEDUP_EVERY === 0) {
+        state.stepMs = Math.max(MIN_STEP_MS, Math.floor(state.stepMs * 0.93));
+      }
+
+      if (state.score > state.best) {
+        state.best = state.score;
+        saveBest();
+      }
+      placeFood();
+      updateHUD();
+    }
+
+    if (state.grow > 0) {
+      state.grow -= 1;
+    } else {
+      state.snake.pop();
+    }
+  }
+
+  function gameOver() {
+    state.running = false;
+    state.paused = false;
+    state.gameOver = true;
+    setModal('over');
+  }
+
+  // ====== DRAWING ======
+  function rr(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+  }
+
+  function drawGrid() {
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.lineWidth = 1;
+
+    for (let x = 0; x <= state.cols; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * GRID + 0.5, 0);
+      ctx.lineTo(x * GRID + 0.5, state.playH);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.stroke();
+    }
+    for (let y = 0; y <= state.rows; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * GRID + 0.5);
+      ctx.lineTo(state.playW, y * GRID + 0.5);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function drawFood() {
+    const x = state.food.x * GRID;
+    const y = state.food.y * GRID;
+
+    const pad = 5;
+    const w = GRID * 2.25;
+    const h = GRID * 0.92;
+
+    const px = x + (GRID - w) / 2;
+    const py = y + (GRID - h) / 2;
+
+    // “пилюля”
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.35)';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    rr(ctx, px, py, w, h, 14);
+    ctx.fillStyle = 'rgba(160,255,220,.90)';
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    rr(ctx, px, py, w, h, 14);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // текст /stats
+    ctx.fillStyle = 'rgba(10,10,20,.92)';
+    ctx.font = '800 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    const label = '/stats';
+    // measureText помогает центрировать текст :contentReference[oaicite:4]{index=4}
+    const m = ctx.measureText(label);
+    const tx = px + (w - m.width) / 2;
+    const ty = py + (h + 14*0.72) / 2;
+    // fillText — стандартный Canvas API :contentReference[oaicite:5]{index=5}
+    ctx.fillText(label, tx, ty);
+
+    ctx.restore();
+  }
+
+  function drawSnake() {
+    // тело
+    for (let i = state.snake.length - 1; i >= 0; i--) {
+      const s = state.snake[i];
+      const x = s.x * GRID;
+      const y = s.y * GRID;
+
+      const inset = 3;
+      const w = GRID - inset*2;
+      const h = GRID - inset*2;
+
+      ctx.save();
+      // градиент “по глубине”
+      const t = i / Math.max(1, state.snake.length - 1);
+      const a = 0.18 + (1 - t) * 0.62;
+      rr(ctx, x + inset, y + inset, w, h, 10);
+      ctx.fillStyle = `rgba(160,210,255,${a.toFixed(3)})`;
+      ctx.fill();
+
+      rr(ctx, x + inset, y + inset, w, h, 10);
+      ctx.strokeStyle = 'rgba(255,255,255,.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // голова поверх
+    const head = state.snake[0];
+    const hx = head.x * GRID;
+    const hy = head.y * GRID;
+
+    ctx.save();
+    const inset = 2;
+    rr(ctx, hx + inset, hy + inset, GRID - inset*2, GRID - inset*2, 12);
+    ctx.fillStyle = 'rgba(255,255,255,.14)';
+    ctx.fill();
+
+    rr(ctx, hx + inset, hy + inset, GRID - inset*2, GRID - inset*2, 12);
+    ctx.strokeStyle = 'rgba(255,255,255,.22)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // глаза
+    const dir = state.dir;
+    const cx = hx + GRID/2;
+    const cy = hy + GRID/2;
+    const ex = cx + dir.x * 4;
+    const ey = cy + dir.y * 4;
+
+    // два глаза “по бокам” от направления
+    const px = -dir.y;
+    const py = dir.x;
+    const eye1 = { x: ex + px*4, y: ey + py*4 };
+    const eye2 = { x: ex - px*4, y: ey - py*4 };
+
+    ctx.fillStyle = 'rgba(10,10,18,.85)';
+    ctx.beginPath(); ctx.arc(eye1.x, eye1.y, 2.8, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(eye2.x, eye2.y, 2.8, 0, Math.PI*2); ctx.fill();
+
+    // кепка (простая, но узнаваемая)
+    drawCap(hx, hy, dir);
+
+    ctx.restore();
+  }
+
+  function drawCap(hx, hy, dir) {
+    // “кепка” — купол + козырёк, повернутые по направлению
+    const cx = hx + GRID/2;
+    const cy = hy + GRID/2;
+
+    // нормализуем направления для поворота
+    const angle = Math.atan2(dir.y, dir.x); // 0 = вправо
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+
+    // купол
+    ctx.beginPath();
+    ctx.arc(0, -2, 10.5, Math.PI, 0, false);
+    ctx.lineTo(9.2, 3);
+    ctx.arc(0, 3, 9.2, 0, Math.PI, false);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,130,220,.85)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.20)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // шов
+    ctx.beginPath();
+    ctx.moveTo(-7, 0);
+    ctx.lineTo(7, 0);
+    ctx.strokeStyle = 'rgba(10,10,18,.18)';
+    ctx.stroke();
+
+    // козырёк
+    rr(ctx, 10.5, -2.3, 12, 5.2, 4);
+    ctx.fillStyle = 'rgba(255,255,255,.20)';
+    ctx.fill();
+    rr(ctx, 10.5, -2.3, 12, 5.2, 4);
+    ctx.strokeStyle = 'rgba(255,255,255,.18)';
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawFrame() {
+    // очищаем рабочую область (в CSS-пикселях)
+    ctx.clearRect(0, 0, state.viewW, state.viewH);
+
+    // центрируем игровое поле (если справа/снизу есть “лишнее”)
+    const ox = Math.floor((state.viewW - state.playW) / 2);
+    const oy = Math.floor((state.viewH - state.playH) / 2);
+
+    ctx.save();
+    ctx.translate(ox, oy);
+
+    // рамка поля
+    rr(ctx, 0, 0, state.playW, state.playH, 16);
+    ctx.fillStyle = 'rgba(0,0,0,.18)';
+    ctx.fill();
+    rr(ctx, 0, 0, state.playW, state.playH, 16);
+    ctx.strokeStyle = 'rgba(255,255,255,.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // внутри сетка + объекты
+    ctx.save();
+    ctx.beginPath();
+    rr(ctx, 0, 0, state.playW, state.playH, 16);
+    ctx.clip();
+
+    drawGrid();
+    drawFood();
+    drawSnake();
+
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function draw() { drawFrame(); }
+
+  // ====== LOOP (rAF) ======
+  function loop(ts) {
+    if (!state.lastTs) state.lastTs = ts;
+    const dt = ts - state.lastTs;
+    state.lastTs = ts;
+
+    if (state.running && !state.paused && !state.gameOver) {
+      state.accMs += dt;
+      while (state.accMs >= state.stepMs) {
+        state.accMs -= state.stepMs;
+        step();
+        if (state.gameOver) break;
+      }
+    }
+
+    drawFrame();
+    // requestAnimationFrame — стандартный способ анимации в браузере :contentReference[oaicite:6]{index=6}
+    requestAnimationFrame(loop);
+  }
+
+  // ====== INIT ======
+  loadBest();
+  fitCanvas();
+  resetGame();
+  setModal('start');
+
+  // на ресайз — подстроиться
+  let resizeT = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => {
+      fitCanvas();
+      resetGame();
+      setModal('start');
+    }, 120);
+  });
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
