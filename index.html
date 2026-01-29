@@ -654,43 +654,37 @@
       ctx.restore();
     }
 
-    // голова поверх
-    const head = state.snake[0];
-    const hx = head.x * GRID;
-    const hy = head.y * GRID;
+  // голова поверх
+    const headImg = new Image();
+    headImg.src = "friend.jpeg";
+    // голова — фото друга
+const head = state.snake[0];
+const hx = head.x * GRID;
+const hy = head.y * GRID;
 
-    ctx.save();
-    const inset = 2;
-    rr(ctx, hx + inset, hy + inset, GRID - inset*2, GRID - inset*2, 12);
-    ctx.fillStyle = 'rgba(255,255,255,.14)';
-    ctx.fill();
+ctx.save();
 
-    rr(ctx, hx + inset, hy + inset, GRID - inset*2, GRID - inset*2, 12);
-    ctx.strokeStyle = 'rgba(255,255,255,.22)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+// поворот по направлению
+const angle = Math.atan2(state.dir.y, state.dir.x);
+ctx.translate(hx + GRID/2, hy + GRID/2);
+ctx.rotate(angle);
 
-    // глаза
-    const dir = state.dir;
-    const cx = hx + GRID/2;
-    const cy = hy + GRID/2;
-    const ex = cx + dir.x * 4;
-    const ey = cy + dir.y * 4;
+// рисуем круглый аватар
+ctx.beginPath();
+ctx.arc(0, 0, GRID*1.1, 0, Math.PI*2);
+ctx.clip();
 
-    // два глаза “по бокам” от направления
-    const px = -dir.y;
-    const py = dir.x;
-    const eye1 = { x: ex + px*4, y: ey + py*4 };
-    const eye2 = { x: ex - px*4, y: ey - py*4 };
+// картинка
+ctx.drawImage(
+  headImg,
+  -GRID*0.75,
+  -GRID*0.75,
+  GRID*1.4,
+  GRID*1.4
+);
 
-    ctx.fillStyle = 'rgba(10,10,18,.85)';
-    ctx.beginPath(); ctx.arc(eye1.x, eye1.y, 2.8, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(eye2.x, eye2.y, 2.8, 0, Math.PI*2); ctx.fill();
+ctx.restore();
 
-    // кепка (простая, но узнаваемая)
-    drawCap(hx, hy, dir);
-
-    ctx.restore();
   }
 
   function drawCap(hx, hy, dir) {
